@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import urllib.error
 import urllib.request
@@ -13,6 +14,20 @@ from typing import Any
 
 DEFAULT_CDP_PORT = 9222
 DEFAULT_TIMEOUT_MS = 60_000
+
+
+def _agent_browser_cmd() -> list[str]:
+    exe = shutil.which("agent-browser")
+    if exe:
+        return [exe]
+    # Windows npm global shims
+    for candidate in (
+        os.path.expandvars(r"%APPDATA%\npm\agent-browser.cmd"),
+        "agent-browser.cmd",
+    ):
+        if os.path.isfile(candidate):
+            return [candidate]
+    return ["agent-browser"]
 
 
 @dataclass
@@ -30,18 +45,40 @@ class AgentBrowser:
         os.environ["AGENT_BROWSER_DEFAULT_TIMEOUT"] = str(timeout_ms)
 
     def run(self, *args: str) -> str:
-        cmd = ["agent-browser", "--cdp", str(self.cdp_port), *args]
+        cmd = [*_agent_browser_cmd(), "--cdp", str(self.cdp_port), *args]
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         output = (result.stdout or "") + (result.stderr or "")
         if result.returncode != 0:
             raise RuntimeError(f"agent-browser failed ({' '.join(args)}): {output.strip()}")
         return output.strip()
 
-    def tab_new(self, url: str) -> str:
-        return self.run("tab", "new", url)
+    def tab_new(self, url: str, *, label: str | None = None) -> str:
+        args = ["tab", "new"]
+        if label:
+            args.extend(["--label", label])
+        args.append(url)
+        return self.run(*args)
 
-    def tab_select(self, tab_id: str) -> str:
-        return self.run("tab", tab_id)
+    def tab_list(self) -> list[dict[str, Any]]:
+        raw = self.run("tab", "list", "--json")
+        payload = json.loads(raw)
+        data = payload.get("data", payload)
+        if isinstance(data, list):
+            return data
+        return data.get("tabs", [])
+
+    def tab_close(self, tab_ref: str | None = None) -> str:
+        if tab_ref:
+            return self.run("tab", "close", tab_ref)
+        return self.run("tab", "close")
+
+    def tab_select(self, tab_ref: str) -> str:
+        return self.run("tab", tab_ref)
+
+    def reuse_tab(self, tab_ref: str, url: str) -> str:
+        """Switch to tab (by id or label) and navigate — avoids opening another tab."""
+        self.tab_select(tab_ref)
+        return self.open(url)
 
     def open(self, url: str) -> str:
         return self.run("open", url)
@@ -69,12 +106,20 @@ class AgentBrowser:
         payload = json.loads(raw)
         return payload.get("data", payload)
 
-    def eval_js(self, js: str) -> Any:
-        raw = self.run("eval", js)
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            return raw
+    def eval_js(self, js: str, *, retries: int = 3) -> Any:
+        # Windows agent-browser chokes on multiline eval scripts
+        js_oneline = " ".join(js.split())
+        last_err = ""
+        for attempt in range(retries):
+            raw = self.run("eval", js_oneline)
+            if raw and raw.strip() not in ("null", ""):
+                try:
+                    return json.loads(raw)
+                except json.JSONDecodeError:
+                    return raw
+            last_err = raw or "empty"
+            self.wait(2000)
+        return None
 
 
 def ensure_cdp(cdp_port: int = DEFAULT_CDP_PORT, launch_script: str | None = None) -> None:

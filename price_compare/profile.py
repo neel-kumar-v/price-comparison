@@ -19,6 +19,16 @@ WALMART_SUBSCRIPTION_DISCOUNT = 0.0
 AMAZON_PRIME_DISCOUNT = 0.0
 AMAZON_SUBSCRIBE_AND_SAVE_DISCOUNT = 0.0
 
+# --- Shoes / outdoor ---
+REI_MEMBER_DIVIDEND = 0.0  # ~10% annual dividend on eligible purchases
+
+# --- Tech ---
+BEST_BUY_TOTALTECH_DISCOUNT = 0.0
+COSTCO_EXECUTIVE_REWARDS = 0.0  # 2% annual reward
+
+# --- Grocery ---
+WEGMANS_INSTACART_MARKUP = 0.15  # documented ~15% delivered vs in-store markup
+
 
 def parse_shelf_price(price: str | None) -> float | None:
     if not price:
@@ -33,7 +43,7 @@ def format_price(amount: float) -> str:
 
 def discounts_for_retailer(retailer: str) -> list[tuple[str, float]]:
     """Return ordered (label, rate) pairs applied to shelf price."""
-    key = retailer.lower()
+    key = retailer.lower().replace("'", "").replace(" ", "")
     if key == "target":
         if TARGET_CIRCLE_DEBIT_CARD_DISCOUNT:
             return [("Target Circle debit card", TARGET_CIRCLE_DEBIT_CARD_DISCOUNT)]
@@ -52,6 +62,15 @@ def discounts_for_retailer(retailer: str) -> list[tuple[str, float]]:
         if AMAZON_SUBSCRIBE_AND_SAVE_DISCOUNT:
             out.append(("Subscribe & Save", AMAZON_SUBSCRIBE_AND_SAVE_DISCOUNT))
         return out
+    if key == "rei":
+        if REI_MEMBER_DIVIDEND:
+            return [("REI member dividend", REI_MEMBER_DIVIDEND)]
+    if key == "bestbuy":
+        if BEST_BUY_TOTALTECH_DISCOUNT:
+            return [("Best Buy Totaltech", BEST_BUY_TOTALTECH_DISCOUNT)]
+    if key == "costco":
+        if COSTCO_EXECUTIVE_REWARDS:
+            return [("Costco Executive 2% reward", COSTCO_EXECUTIVE_REWARDS)]
     return []
 
 

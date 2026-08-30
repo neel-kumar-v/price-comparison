@@ -1,0 +1,40 @@
+{
+  "general": {
+    "title": "HASK Repair + Argan Oil Conditioner",
+    "size": "16 fl oz",
+    "category": "general",
+    "upc": "071164341568",
+    "url": "https://www.target.com/p/hask-repair-argan-oil-conditioner-16oz/-/A-94794457"
+  },
+  "sheamoisture": {
+    "title": "SheaMoisture Intensive Hydration Leave-in Conditioner Manuka Honey and Mafura Oil",
+    "size": "11.5 fl oz",
+    "category": "general",
+    "url": "https://www.target.com/p/sheamoisture-manuka-honey-38-mafura-oil-intensive-hydration-leave-in-conditioner-11-5-fl-oz/-/A-87184947"
+  },
+  "shoes": {
+    "title": "Nike Pegasus 41",
+    "size": "US 10.5",
+    "category": "shoes",
+    "colorway": "Black/White",
+    "sku": null,
+    "url": null
+  },
+    "tech": {
+    "title": "Apple AirPods Pro (2nd generation)",
+    "size": "MTJV3LL/A",
+    "category": "tech",
+    "sku": "MTJV3LL/A",
+    "url": "https://www.bestbuy.com/site/apple-airpods-pro-2nd-generation-with-magsafe-charging-case-usb-c-white/6447382.p?skuId=6447382"
+  },
+  "grocery": {
+    "title": "Organic Whole Milk",
+    "size": "1 gal",
+    "category": "grocery",
+    "url": null,
+    "locations": {
+      "61801": { "label": "Champaign IL" },
+      "19425": { "label": "Chester Springs PA" }
+    }
+  }
+}
