@@ -1,4 +1,4 @@
-"""Thin wrapper around the agent-browser CLI."""
+"""Thin wrapper around the chrome-use CLI (formerly agent-browser)."""
 
 from __future__ import annotations
 
@@ -17,17 +17,29 @@ DEFAULT_TIMEOUT_MS = 60_000
 
 
 def _agent_browser_cmd() -> list[str]:
+    # chrome-use replaced agent-browser; abs is its short alias.
+    for name in ("chrome-use", "abs"):
+        exe = shutil.which(name)
+        if exe:
+            return [exe]
+    # Windows shims installed next to npm globals
+    for candidate in (
+        os.path.expandvars(r"%APPDATA%\npm\chrome-use.exe"),
+        os.path.expandvars(r"%APPDATA%\npm\abs.exe"),
+    ):
+        if os.path.isfile(candidate):
+            return [candidate]
+    # Legacy fallback (agent-browser removed; kept for old checkouts)
     exe = shutil.which("agent-browser")
     if exe:
         return [exe]
-    # Windows npm global shims
     for candidate in (
         os.path.expandvars(r"%APPDATA%\npm\agent-browser.cmd"),
         "agent-browser.cmd",
     ):
         if os.path.isfile(candidate):
             return [candidate]
-    return ["agent-browser"]
+    return ["chrome-use"]
 
 
 @dataclass
@@ -49,7 +61,7 @@ class AgentBrowser:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         output = (result.stdout or "") + (result.stderr or "")
         if result.returncode != 0:
-            raise RuntimeError(f"agent-browser failed ({' '.join(args)}): {output.strip()}")
+            raise RuntimeError(f"chrome-use failed ({' '.join(args)}): {output.strip()}")
         return output.strip()
 
     def tab_new(self, url: str, *, label: str | None = None) -> str:
@@ -107,7 +119,7 @@ class AgentBrowser:
         return payload.get("data", payload)
 
     def eval_js(self, js: str, *, retries: int = 3) -> Any:
-        # Windows agent-browser chokes on multiline eval scripts
+        # Windows chrome-use chokes on multiline eval scripts
         js_oneline = " ".join(js.split())
         last_err = ""
         for attempt in range(retries):
